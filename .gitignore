@@ -9,7 +9,21 @@ desktop.ini
 *.swp
 *.swo
 
-# Node (if added later)
+# Dependencies
 node_modules/
+
+# Next.js
+.next/
+out/
 dist/
+
+# Environment
 .env
+.env.local
+.env.production.local
+
+# Vercel
+.vercel
+
+# Debug
+npm-debug.log*
