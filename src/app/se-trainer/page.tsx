@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 // === Data: 10 Technical Sections ===
 const sections = [
@@ -392,11 +392,17 @@ export default function SETrainerPage() {
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [showExplanation, setShowExplanation] = useState(false);
-  const [communityQs, setCommunityQs] = useState<Array<{ id: number; text: string; author: string; time: string }>>([]);
+  const [communityQs, setCommunityQs] = useState<Array<{ id: string; text: string; author: string; ai_answer: string | null; created_at: string }>>([]);
   const [newQuestion, setNewQuestion] = useState("");
-  const [expandingId, setExpandingId] = useState<number | null>(null);
-  const [expandedAnswers, setExpandedAnswers] = useState<Record<number, string>>({});
+  const [expandingId, setExpandingId] = useState<string | null>(null);
   const quizRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch("/api/community")
+      .then((res) => res.json())
+      .then((data) => { if (Array.isArray(data)) setCommunityQs(data); })
+      .catch(() => {});
+  }, []);
 
   const filteredQuestions = quizSection ? questions.filter((q) => q.section === quizSection) : questions;
 
@@ -430,33 +436,40 @@ export default function SETrainerPage() {
 
   const totalAnswered = Object.keys(answers).length;
 
-  const expandQuestion = async (id: number) => {
+  const expandQuestion = async (id: string) => {
     const cq = communityQs.find((q) => q.id === id);
     if (!cq) return;
     setExpandingId(id);
     try {
-      const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      const resp = await fetch("/api/community/expand", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          messages: [{ role: "user", content: `You are an expert on OpenAI's products and the role of an AI Sales Engineer. A user submitted this interview practice question: "${cq.text}"\n\nProvide a detailed, structured answer that would help someone preparing for an OpenAI Sales Engineer interview. Include: (1) why an interviewer asks this, (2) a strong model answer, (3) one key tip. Keep it concise but thorough. Use plain text, no markdown.` }],
-        }),
+        body: JSON.stringify({ id: cq.id, text: cq.text }),
       });
       const data = await resp.json();
-      const answer = data.content?.map((c: { text?: string }) => c.text || "").join("\n") || "Unable to generate answer. Please try again.";
-      setExpandedAnswers((prev) => ({ ...prev, [id]: answer }));
+      if (data.answer) {
+        setCommunityQs((prev) => prev.map((q) => (q.id === id ? { ...q, ai_answer: data.answer } : q)));
+      }
     } catch {
-      setExpandedAnswers((prev) => ({ ...prev, [id]: "Error connecting to API. Please try again." }));
+      setCommunityQs((prev) => prev.map((q) => (q.id === id ? { ...q, ai_answer: "Error connecting to API. Please try again." } : q)));
     }
     setExpandingId(null);
   };
 
-  const addCommunityQuestion = () => {
+  const addCommunityQuestion = async () => {
     if (!newQuestion.trim()) return;
-    setCommunityQs((prev) => [...prev, { id: Date.now(), text: newQuestion.trim(), author: "Contributor", time: new Date().toLocaleString() }]);
-    setNewQuestion("");
+    try {
+      const resp = await fetch("/api/community", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: newQuestion.trim() }),
+      });
+      const data = await resp.json();
+      if (data.id) {
+        setCommunityQs((prev) => [data, ...prev]);
+        setNewQuestion("");
+      }
+    } catch {}
   };
 
   const renderContent = (text: string) => {
@@ -930,10 +943,10 @@ export default function SETrainerPage() {
                     <div style={{ flex: 1 }}>
                       <p style={{ margin: "0 0 6px", fontSize: 15, fontWeight: 600, lineHeight: 1.5 }}>{cq.text}</p>
                       <p style={{ margin: 0, fontSize: 12, color: colors.textMuted }}>
-                        Added by {cq.author} \u00B7 {cq.time}
+                        Added by {cq.author} \u00B7 {new Date(cq.created_at).toLocaleString()}
                       </p>
                     </div>
-                    {!expandedAnswers[cq.id] && (
+                    {!cq.ai_answer && (
                       <button
                         onClick={() => expandQuestion(cq.id)}
                         disabled={expandingId === cq.id}
@@ -954,10 +967,10 @@ export default function SETrainerPage() {
                       </button>
                     )}
                   </div>
-                  {expandedAnswers[cq.id] && (
+                  {cq.ai_answer && (
                     <div style={{ marginTop: 16, padding: "16px 20px", background: colors.accentGlow, border: `1px solid ${colors.accent}33`, borderRadius: 10 }}>
                       <p style={{ margin: "0 0 8px", fontSize: 12, fontWeight: 600, color: colors.accent }}>{"\uD83E\uDD16"} AI-Generated Answer</p>
-                      <div style={{ fontSize: 14, color: colors.text, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{expandedAnswers[cq.id]}</div>
+                      <div style={{ fontSize: 14, color: colors.text, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{cq.ai_answer}</div>
                     </div>
                   )}
                 </div>
