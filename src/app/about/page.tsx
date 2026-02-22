@@ -14,7 +14,7 @@ export default function AboutPage() {
             <h1 className="text-3xl font-bold">About</h1>
           </div>
           <p className="text-muted-foreground mb-10">
-            Built by Christian Curran as a demonstration of AI deployment and enablement capabilities.
+            A demonstration of AI deployment and enablement capabilities.
           </p>
 
           {/* Project Context */}
@@ -101,7 +101,7 @@ export default function AboutPage() {
                 and financial services technology:
               </p>
               <div className="space-y-1">
-                <p><strong className="text-foreground">Christian Curran</strong></p>
+                <p><strong className="text-foreground">CTC</strong></p>
                 <p>
                   <a
                     href="https://github.com/christiantcurran-collab"

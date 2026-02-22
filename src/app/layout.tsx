@@ -5,7 +5,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "CTC Portfolio",
   description:
-    "Christian Curran — Interactive portfolio showcasing AI, insurance, and solutions engineering demos.",
+    "Interactive portfolio showcasing AI, insurance, and solutions engineering demos.",
 };
 
 export default function RootLayout({

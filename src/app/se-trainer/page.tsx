@@ -394,6 +394,7 @@ export default function SETrainerPage() {
   const [showExplanation, setShowExplanation] = useState(false);
   const [communityQs, setCommunityQs] = useState<Array<{ id: string; text: string; author: string; ai_answer: string | null; created_at: string }>>([]);
   const [newQuestion, setNewQuestion] = useState("");
+  const [authorName, setAuthorName] = useState("");
   const [expandingId, setExpandingId] = useState<string | null>(null);
   const quizRef = useRef<HTMLDivElement>(null);
 
@@ -462,7 +463,7 @@ export default function SETrainerPage() {
       const resp = await fetch("/api/community", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: newQuestion.trim() }),
+        body: JSON.stringify({ text: newQuestion.trim(), author: authorName.trim() || undefined }),
       });
       const data = await resp.json();
       if (data.id) {
@@ -888,14 +889,32 @@ export default function SETrainerPage() {
                 Submit interview questions. Click &quot;Expand&quot; to generate a detailed AI-powered answer.
               </p>
 
-              <div style={{ display: "flex", gap: 10, marginBottom: 8 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 8 }}>
                 <input
                   value={newQuestion}
                   onChange={(e) => setNewQuestion(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && addCommunityQuestion()}
                   placeholder="Type an interview question..."
                   style={{
-                    flex: 1,
+                    width: "100%",
+                    padding: "12px 16px",
+                    background: colors.surface,
+                    border: `1px solid ${colors.border}`,
+                    borderRadius: 10,
+                    color: colors.text,
+                    fontSize: 14,
+                    fontFamily: "inherit",
+                    outline: "none",
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = colors.accent)}
+                  onBlur={(e) => (e.target.style.borderColor = colors.border)}
+                />
+                <input
+                  value={authorName}
+                  onChange={(e) => setAuthorName(e.target.value)}
+                  placeholder="Your name (optional)"
+                  style={{
+                    width: "100%",
                     padding: "12px 16px",
                     background: colors.surface,
                     border: `1px solid ${colors.border}`,
@@ -911,6 +930,7 @@ export default function SETrainerPage() {
                 <button
                   onClick={addCommunityQuestion}
                   style={{
+                    width: "100%",
                     padding: "12px 22px",
                     background: colors.accent,
                     color: "#fff",
@@ -920,7 +940,6 @@ export default function SETrainerPage() {
                     fontWeight: 600,
                     fontFamily: "inherit",
                     fontSize: 14,
-                    whiteSpace: "nowrap",
                   }}
                 >
                   + Add Question
